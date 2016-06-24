@@ -1241,6 +1241,8 @@ def crate_info_from_index(idir, name, svr):
             passed[sv] = info
 
     keys = sorted(passed.iterkeys())
+    if not keys:
+        dbg('no matching crate found for %s %s' % (name, svr))
     best_match = keys.pop()
     dbg('best match is %s-%s' % (name, best_match))
     best_info = passed[best_match]
