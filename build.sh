@@ -2,7 +2,7 @@
 #
 # Builds cargo using bootstrap.py
 
-VERSION="master"
+VERSION="0.10.0"
 TARGET="x86_64-unknown-linux-gnu"
 BLACKLIST="winapi winapi-build advapi32-sys kernel32-sys"
 OPTS="miniz-sys"
