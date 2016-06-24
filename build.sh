@@ -17,7 +17,7 @@ if [ "x$1" = "xcompile" ]; then
 fi
 
 echo "clearing $buildpath directory..."
-[ -d "$buildpath" ] && rm --preserve-root -r -- "$buildpath"
+[ -d "$buildpath" ] && rm --preserve-root -r -f -- "$buildpath"
 mkdir -p "$buildpath/out"
 mkdir -p "$cachepath"
 cd "$rootpath/$buildpath" || exit
