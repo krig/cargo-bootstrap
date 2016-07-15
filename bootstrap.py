@@ -1334,7 +1334,7 @@ def patch_crates(targetdir, patchdir):
       <crate>/
         <patch>.patch
     """
-    for patch in glob(os.path.join(patchdir, '*', '*.patch')):
+    for patch in glob(os.path.join(patchdir, '*', '*')):
         crateid = os.path.basename(os.path.dirname(patch))
         m = re.match(r'^([A-Za-z0-9_-]+?)(?:-([\d.]+))?$', crateid)
         if m:
@@ -1352,7 +1352,7 @@ def prepatch_crate(cratedir, patchdir):
     crateid = os.path.basename(cratedir)
     m = re.match(r'^([A-Za-z0-9_-]+?)(?:-([\d.]+))?$', crateid)
     cratename = m.group(1)
-    for patch in glob(os.path.join(patchdir, cratename, '*.patch')):
+    for patch in glob(os.path.join(patchdir, cratename, '*')):
         patch_crate(cratedir, patch)
 
 def patch_crate(cratedir, patch):
@@ -1369,6 +1369,14 @@ def patch_crate(cratedir, patch):
                 rc = p.wait()
                 if rc != 0:
                     dbg("%s: failed to apply %s (rc=%s)" % (os.path.basename(cratedir), os.path.basename(patch), rc))
+            else:
+                dbg("%s: %s does not apply (rc=%s)" % (os.path.basename(cratedir), os.path.basename(patch), rc))
+        else:
+            patchpath = os.path.abspath(patch)
+            p = subprocess.Popen([patchpath], cwd=cratedir)
+            rc = p.wait()
+            if rc == 0:
+                dbg("patching %s with patch %s" % (os.path.basename(cratedir), os.path.basename(patch)))
             else:
                 dbg("%s: %s does not apply (rc=%s)" % (os.path.basename(cratedir), os.path.basename(patch), rc))
 
