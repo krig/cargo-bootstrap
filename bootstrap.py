@@ -507,6 +507,9 @@ class SemverRange(object):
         return "SemverRange(%s, op=%s, semver=%s, lower=%s, upper=%s)" % (repr(self._input), self._op, self._semver, self._lower, self._upper)
 
     def __str__(self):
+        # 0 semvers do not have to crash on display: maybe this is a source dependency that we could not find in index
+        if isinstance(self._input, int):
+            return str(self._input)
         return self._input
 
     def lower(self):
