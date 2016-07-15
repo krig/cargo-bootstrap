@@ -779,7 +779,7 @@ class Crate(object):
         return self._resolved
 
     @dbgCtx
-    def resolve(self, tdir, idir, nodl, graph=None):
+    def resolve(self, tdir, idir, pdir, nodl, graph=None):
         if self._resolved:
             return
         if str(self) in CRATES:
@@ -818,7 +818,7 @@ class Crate(object):
                         if nodl:
                             cdir = find_downloaded_crate(tdir, name, svr)
                         else:
-                            cdir = dl_and_check_crate(tdir, name, ver, cksum)
+                            cdir = dl_and_check_crate(tdir, name, ver, cksum, pdir)
                         _, tver, tdeps, build = crate_info_from_toml(cdir)
                         deps += ideps
                         deps += tdeps
@@ -1033,7 +1033,7 @@ def dl_crate(url, depth=0):
     finally:
         r.close()
 
-def dl_and_check_crate(tdir, name, ver, cksum):
+def dl_and_check_crate(tdir, name, ver, cksum, patchdir):
     cname = '%s-%s' % (name, ver)
     cdir = os.path.join(tdir, cname)
     if cname in CRATES:
@@ -1075,6 +1075,9 @@ def dl_and_check_crate(tdir, name, ver, cksum):
         with tarfile.open(fileobj=fbuf) as tf:
             dbg('unpacking result to %s...' % cdir)
             tf.extractall(path=tdir)
+
+    if patchdir is not None:
+        prepatch_crate(cdir, patchdir)
 
     return cdir
 
@@ -1343,6 +1346,19 @@ def patch_crates(targetdir, patchdir):
         else:
             dirs = glob(os.path.join(targetdir, '%s-*' % (cratename)))
         for cratedir in dirs:
+            patch_crate(cratedir, patch)
+
+def prepatch_crate(cratedir, patchdir):
+    crateid = os.path.basename(cratedir)
+    m = re.match(r'^([A-Za-z0-9_-]+?)(?:-([\d.]+))?$', crateid)
+    cratename = m.group(1)
+    for patch in glob(os.path.join(patchdir, cratename, '*.patch')):
+        patch_crate(cratedir, patch)
+
+def patch_crate(cratedir, patch):
+    # when cratesdir is in a dirty state, some generated libs get returned as cratedir. Avoid this case with an isdir().
+    if os.path.isdir(cratedir):
+        if patch.endswith('.patch'):
             # check if patch has been applied
             patchpath = os.path.abspath(patch)
             p = subprocess.Popen(['patch', '--dry-run', '-s', '-f', '-F', '10', '-p1', '-i', patchpath], cwd=cratedir)
@@ -1355,7 +1371,6 @@ def patch_crates(targetdir, patchdir):
                     dbg("%s: failed to apply %s (rc=%s)" % (os.path.basename(cratedir), os.path.basename(patch), rc))
             else:
                 dbg("%s: %s does not apply (rc=%s)" % (os.path.basename(cratedir), os.path.basename(patch), rc))
-
 
 if __name__ == "__main__":
     try:
@@ -1421,7 +1436,7 @@ if __name__ == "__main__":
         print '===================================='
         while len(UNRESOLVED) > 0:
             crate = UNRESOLVED.pop(0)
-            crate.resolve(args.target_dir, args.crate_index, args.no_download, GRAPH)
+            crate.resolve(args.target_dir, args.crate_index, args.patchdir, args.no_download, GRAPH)
 
         if args.graph:
             print >> GRAPH, "}"
